@@ -474,7 +474,7 @@ void renderScene()
 	glm::mat4 shipModelMatrix = glm::translate(cameraPos + cameraDir * 0.5f) * glm::rotate(-cameraAngle, glm::vec3(0, 1, 0)) * shipInitialTransformation;
 	//glm::mat4 shipModelMatrix = glm::translate(cameraPos + cameraDir * 0.5f + glm::vec3(0,-0.25f,0)) * glm::rotate(-cameraAngle + glm::radians(90.0f), glm::vec3(0,1,0)) * glm::scale(glm::vec3(0.25f));
 	//drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.6f));
-	//drawObjectTexture(&sharkModel, shipModelMatrix, sharkTex);
+	drawObjectTexture(&sharkModel, shipModelMatrix, sharkTex);
 	//drawObjectTexture(&groundModel, glm::translate(glm::vec3(0, -115, 0)), groundTex);
 	//ground texture with normal map
 	drawObjectTextureNormal(&groundModel, glm::translate(glm::vec3(0, -115, 0)), groundTex, groundTexN);
