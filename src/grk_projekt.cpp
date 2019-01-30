@@ -16,6 +16,7 @@
 #define ILOSCRYB 800
 #define ILOSCWODOROSTOW 300
 #define ILOSCBUBBLE 300
+#define ILOSCSTATUL 2
 
 GLuint programColor;
 GLuint programTexture;
@@ -38,6 +39,10 @@ obj::Model groundModel;
 obj::Model sphereModel;
 obj::Model chestModel;
 obj::Model statueModel;
+
+glm::vec3 sharkPos;
+glm::vec3 sharkVecMin;
+glm::vec3 sharkVecMax;
 
 float cameraAngle = 0;
 float cameraAngle1 = 0;
@@ -120,6 +125,12 @@ const float cubeVertices[] = {
 	-30.5f, -30.5f, -30.5f, 1.0f,
 	-30.5f, -30.5f, 30.5f, 1.0f,
 };
+void calcSharkPos() {
+	sharkPos = cameraPos + cameraDir * 0.5f;
+	sharkVecMin = sharkPos + cameraDir * 0.25f + glm::rotate(cameraDir, glm::radians(90.0f), glm::vec3(0, 1, 0)) * 0.12f + glm::vec3(0, 0.12f, 0);
+	sharkVecMax = sharkPos - cameraDir * 0.25f - glm::rotate(cameraDir, glm::radians(90.0f), glm::vec3(0, 1, 0)) * 0.12f - glm::vec3(0, 0.12f, 0);
+	std::cout << glm::to_string(cameraDir) << std::endl;
+}
 
 void keyboard(unsigned char key, int x, int y)
 {
@@ -137,6 +148,7 @@ void keyboard(unsigned char key, int x, int y)
 	case 'd': cameraPos += cameraSide * moveSpeed; break;
 	case 'a': cameraPos -= cameraSide * moveSpeed; break;
 	}
+	calcSharkPos();
 }
 
 glm::mat4 createCameraMatrix()
@@ -450,9 +462,44 @@ void Bubble::Render()
 	//drawObjectColor(&sphereModel, glm::translate(position) * glm::scale(glm::vec3(0.4f * speed * 2.0f)), glm::vec3(1.0f, 1.0f, 1.0f), 0.3f);
 }
 
+
+class Statue
+{
+public:
+	Statue();
+	Statue(glm::vec3 pos);
+	void Render();
+
+private:
+	glm::vec3 position;
+	glm::vec3 direction;
+	glm::vec3 vecMin;
+	glm::vec3 vecMax;
+};
+
+Statue::Statue() {
+	;
+}
+
+Statue::Statue(glm::vec3 pos)
+{
+	direction = glm::vec3(0.5f, 0.0f, 0.86f);
+	position = pos;
+	vecMin = pos + direction * 2 + glm::rotate(direction, glm::radians(90.0f), glm::vec3(0, 1, 0)) * 3 + glm::vec3(0, 18, 0);
+	vecMax = pos - direction * 2 + glm::rotate(direction, glm::radians(-90.0f), glm::vec3(0, 1, 0)) * 3;
+}
+
+void Statue::Render()
+{
+	drawObjectColor(&sphereModel, glm::translate(vecMin) * glm::scale(glm::vec3(1)), glm::vec3(1, 0, 0));
+	drawObjectColor(&sphereModel, glm::translate(vecMax) * glm::scale(glm::vec3(1)), glm::vec3(1, 0, 0));
+	drawObjectTexture(&statueModel, glm::translate(position) * glm::rotate(glm::radians(90.0f), glm::vec3(-1, 0, 0)) * glm::scale(glm::vec3(0.1f)), statueTex);
+}
+
 Ryba fish[ILOSCRYB];
 Wodorost plant[ILOSCWODOROSTOW];
 Bubble bubble[ILOSCBUBBLE];
+Statue statue[ILOSCSTATUL];
 
 void renderScene()
 {
@@ -472,12 +519,18 @@ void renderScene()
 
 	glm::mat4 shipInitialTransformation = glm::translate(glm::vec3(0, -2.25f, -5)) * glm::rotate(glm::radians(180.0f), glm::vec3(0, 1, -0.1)) * glm::scale(glm::vec3(0.25f));
 	glm::mat4 shipModelMatrix = glm::translate(cameraPos + cameraDir * 0.5f) * glm::rotate(-cameraAngle, glm::vec3(0, 1, 0)) * shipInitialTransformation;
+	drawObjectTextureEM(&sphereModel, glm::translate(sharkVecMin) * glm::scale(glm::vec3(0.2f)), asteroidTex);
+	drawObjectTextureEM(&sphereModel, glm::translate(sharkVecMax) * glm::scale(glm::vec3(0.2f)), asteroidTex);
 	//glm::mat4 shipModelMatrix = glm::translate(cameraPos + cameraDir * 0.5f + glm::vec3(0,-0.25f,0)) * glm::rotate(-cameraAngle + glm::radians(90.0f), glm::vec3(0,1,0)) * glm::scale(glm::vec3(0.25f));
 	//drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.6f));
 	drawObjectTexture(&sharkModel, shipModelMatrix, sharkTex);
 	//drawObjectTexture(&groundModel, glm::translate(glm::vec3(0, -115, 0)), groundTex);
+	
+	
 	//ground texture with normal map
-	drawObjectTextureNormal(&groundModel, glm::translate(glm::vec3(0, -115, 0)), groundTex, groundTexN);
+	//drawObjectTextureNormal(&groundModel, glm::translate(glm::vec3(0, -115, 0)), groundTex, groundTexN);
+	
+	
 	//drawObjectTexture(&sphereModel, glm::translate(glm::vec3(0.0f, -130, 0.0f)) * glm::scale(glm::vec3(95.0f)), skyTex);
 
 	//drawObjectColor(&sphereModel, glm::translate(glm::vec3(0.0f, -130, 0.0f)) * glm::scale(glm::vec3(40.0f)), glm::vec3(1.0f, 1.0f, 1.0f), 0.3f);
@@ -485,8 +538,8 @@ void renderScene()
 
 	drawObjectTextureNormal(&chestModel, glm::translate(glm::vec3(0, -113.5f, 0)), chestTex, chestTexN);
 
-	drawObjectTextureBRDF(&statueModel, glm::translate(glm::vec3(10, -115, -10)) * glm::rotate(glm::radians(90.0f), glm::vec3(-1, 0, 0)) * glm::scale(glm::vec3(0.1f)), goldTex, goldTexM, goldTexR);
-	drawObjectTexture(&statueModel, glm::translate(glm::vec3(-20, -115, -20)) * glm::rotate(glm::radians(90.0f), glm::vec3(-1, 0, 0)) * glm::scale(glm::vec3(0.1f)), statueTex);
+	//drawObjectTextureBRDF(&statueModel, glm::translate(glm::vec3(10, -115, -10)) * glm::rotate(glm::radians(90.0f), glm::vec3(-1, 0, 0)) * glm::scale(glm::vec3(0.1f)), goldTex, goldTexM, goldTexR);
+	//drawObjectTexture(&statueModel, glm::translate(glm::vec3(-20, -115, -20)) * glm::rotate(glm::radians(90.0f), glm::vec3(-1, 0, 0)) * glm::scale(glm::vec3(0.1f)), statueTex);
 
 	timeF = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
 
@@ -500,9 +553,14 @@ void renderScene()
 		plant[i].Render();
 	}
 
-	for (int i = 0; i < ILOSCBUBBLE; i++)
+	/*for (int i = 0; i < ILOSCBUBBLE; i++)
 	{
 		bubble[i].Render();
+	}*/
+
+	for (int i = 0; i < ILOSCSTATUL; i++)
+	{
+		statue[i].Render();
 	}
 	//drawObjectColor(&sphereModel, filtrMatrix, glm::vec3(0.23f, 0.74f, 0.94f), 0.3f);
 
@@ -532,6 +590,13 @@ void init()
 		Bubble* temporary = new Bubble();
 		bubble[i] = *temporary;
 	}
+
+	Statue* stat1 = new Statue(glm::vec3(10, -115, -10));
+	statue[0] = *stat1;
+
+	Statue* stat2 = new Statue(glm::vec3(-20, -115, -20));
+	statue[1] = *stat2;
+
 
 	programColor = shaderLoader.CreateProgram("shaders/shader_color.vert", "shaders/shader_color.frag");
 	programTexture = shaderLoader.CreateProgram("shaders/shader_tex.vert", "shaders/shader_tex.frag");
@@ -595,6 +660,7 @@ void init()
 		//std::cout << i << std::endl;
 
 	}
+	calcSharkPos();
 }
 
 void shutdown()
