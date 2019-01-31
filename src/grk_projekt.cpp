@@ -125,30 +125,13 @@ const float cubeVertices[] = {
 	-30.5f, -30.5f, -30.5f, 1.0f,
 	-30.5f, -30.5f, 30.5f, 1.0f,
 };
+
 void calcSharkPos() {
 	sharkPos = cameraPos + cameraDir * 0.5f;
-	sharkVecMin = sharkPos + cameraDir * 0.25f + glm::rotate(cameraDir, glm::radians(90.0f), glm::vec3(0, 1, 0)) * 0.12f + glm::vec3(0, 0.12f, 0);
-	sharkVecMax = sharkPos - cameraDir * 0.25f - glm::rotate(cameraDir, glm::radians(90.0f), glm::vec3(0, 1, 0)) * 0.12f - glm::vec3(0, 0.12f, 0);
-	std::cout << glm::to_string(cameraDir) << std::endl;
-}
-
-void keyboard(unsigned char key, int x, int y)
-{
-	float angleSpeed = 0.1f;
-	float angleSpeed1 = 0.5f;
-	float moveSpeed = 0.7f;
-	switch (key)
-	{
-	case 'z': cameraAngle -= angleSpeed; break;
-	case 'x': cameraAngle += angleSpeed; break;
-	case 'q': cameraPos -= cameraVer * moveSpeed; break;
-	case 'e': if(cameraPos.y > -111) cameraPos += cameraVer * moveSpeed; break;
-	case 'w': cameraPos += cameraDir * moveSpeed; break;
-	case 's': cameraPos -= cameraDir * moveSpeed; break;
-	case 'd': cameraPos += cameraSide * moveSpeed; break;
-	case 'a': cameraPos -= cameraSide * moveSpeed; break;
-	}
-	calcSharkPos();
+	glm::vec3 dir = glm::vec3(1, 0, 1);
+	sharkVecMin = sharkPos + dir * 0.5f + glm::rotate(dir, glm::radians(90.0f), glm::vec3(0, 1, 0)) * 0.5f + glm::vec3(0, 0.5f, 0);
+	sharkVecMax = sharkPos - dir * 0.5f + glm::rotate(dir, glm::radians(-90.0f), glm::vec3(0, 1, 0)) * 0.5f - glm::vec3(0, 0.5f, 0);
+	//std::cout << glm::to_string(cameraDir) << std::endl;
 }
 
 glm::mat4 createCameraMatrix()
@@ -284,9 +267,9 @@ void drawObjectTextureBRDF(obj::Model * model, glm::mat4 modelMatrix, GLuint tex
 	glUniform3f(glGetUniformLocation(program, "lightDir"), lightDir.x, lightDir.y, lightDir.z);
 	glUniform3f(glGetUniformLocation(program, "cameraPos"), cameraPos.x, cameraPos.y, cameraPos.z);
 	
-	Core::SetActiveTexture(textureId, "albedoMap", program, 0);
-	Core::SetActiveTexture(metallic, "metallicMap", program, 1);
-	Core::SetActiveTexture(roughness, "roughnessMap", program, 2);
+	Core::SetActiveTexture(textureId, "textureRustedIron", program, 0);
+	Core::SetActiveTexture(metallic, "textureRustedIronMetallic", program, 1);
+	Core::SetActiveTexture(roughness, "textureRustedIronRoughness", program, 2);
 
 	glm::mat4 transformation = perspectiveMatrix * cameraMatrix * modelMatrix;
 	glUniformMatrix4fv(glGetUniformLocation(program, "modelViewProjectionMatrix"), 1, GL_FALSE, (float*)&transformation);
@@ -384,12 +367,14 @@ void Ryba::Move()
 	}
 	temp = glm::vec3(position);
 	temp.y -= 1.2*sinf(glutGet(GLUT_ELAPSED_TIME) / 500.0f - random);
-	/*if (trigger == false && sqrt((cameraPos.x - temp.x)*(cameraPos.x - temp.x) + (cameraPos.y - temp.y)*(cameraPos.y - temp.y) + (cameraPos.z - temp.z)*(cameraPos.z - temp.z)) < 20.0f)
+	if (trigger == false && sqrt((cameraPos.x - temp.x)*(cameraPos.x - temp.x) + (cameraPos.y - temp.y)*(cameraPos.y - temp.y) + (cameraPos.z - temp.z)*(cameraPos.z - temp.z)) < 20.0f)
 	{
 		//std::cout << "BLISKO" << std::endl;
+		direction = glm::normalize(cameraDir + direction);
+		//random = acosf(direction.x);
 		trigger = true;
 	}
-	*/
+	
 }
 
 void Ryba::Render()
@@ -467,33 +452,57 @@ class Statue
 {
 public:
 	Statue();
-	Statue(glm::vec3 pos);
+	Statue(glm::vec3 pos, bool g);
 	void Render();
+	glm::vec3 vecMin;
+	glm::vec3 vecMax;
 
 private:
 	glm::vec3 position;
 	glm::vec3 direction;
-	glm::vec3 vecMin;
-	glm::vec3 vecMax;
+	bool gold;
 };
 
 Statue::Statue() {
 	;
 }
 
-Statue::Statue(glm::vec3 pos)
+Statue::Statue(glm::vec3 pos, bool g)
 {
-	direction = glm::vec3(0.5f, 0.0f, 0.86f);
+	direction = glm::vec3(1, 0, 1);
 	position = pos;
-	vecMin = pos + direction * 2 + glm::rotate(direction, glm::radians(90.0f), glm::vec3(0, 1, 0)) * 3 + glm::vec3(0, 18, 0);
-	vecMax = pos - direction * 2 + glm::rotate(direction, glm::radians(-90.0f), glm::vec3(0, 1, 0)) * 3;
+	vecMin = pos + direction * 5 + glm::rotate(direction, glm::radians(-90.0f), glm::vec3(0, 1, 0)) * 8;
+	vecMax = pos - direction * 5 + glm::rotate(direction, glm::radians(90.0f), glm::vec3(0, 1, 0)) * 8 + glm::vec3(0, 18, 0);
+	gold = g;
 }
 
 void Statue::Render()
 {
-	drawObjectColor(&sphereModel, glm::translate(vecMin) * glm::scale(glm::vec3(1)), glm::vec3(1, 0, 0));
+	/*drawObjectColor(&sphereModel, glm::translate(vecMin) * glm::scale(glm::vec3(1)), glm::vec3(1, 0, 0));
+	int i = 0;
+	glm::vec3 pos = vecMin + glm::vec3(0.1*i, 0, 0);
+	while(pos.x < vecMax.x) {
+		pos = vecMin + glm::vec3(0.1 * i, 0, 0);
+		drawObjectColor(&sphereModel, glm::translate(pos) * glm::scale(glm::vec3(1)), glm::vec3(1, 0, 0));
+		i++;
+		//std::cout << i << std::endl;
+	}
 	drawObjectColor(&sphereModel, glm::translate(vecMax) * glm::scale(glm::vec3(1)), glm::vec3(1, 0, 0));
-	drawObjectTexture(&statueModel, glm::translate(position) * glm::rotate(glm::radians(90.0f), glm::vec3(-1, 0, 0)) * glm::scale(glm::vec3(0.1f)), statueTex);
+	i = 0;
+	pos = vecMax - glm::vec3(0.1*i, 0, 0);
+	while (pos.x > vecMin.x) {
+		pos = vecMax - glm::vec3(0.1 * i, 0, 0);
+		drawObjectColor(&sphereModel, glm::translate(pos) * glm::scale(glm::vec3(1)), glm::vec3(1, 0, 0));
+		i++;
+		//std::cout << i << std::endl;
+	}*/
+	if (gold) {
+		drawObjectTextureBRDF(&statueModel, glm::translate(position) * glm::rotate(glm::radians(90.0f), glm::vec3(-1, 0, 0)) * glm::scale(glm::vec3(0.1f)), goldTex, goldTexM, goldTexR);
+	}
+	else {
+		drawObjectTexture(&statueModel, glm::translate(position) * glm::rotate(glm::radians(90.0f), glm::vec3(-1, 0, 0)) * glm::scale(glm::vec3(0.1f)), statueTex);
+	}
+	
 }
 
 Ryba fish[ILOSCRYB];
@@ -519,8 +528,8 @@ void renderScene()
 
 	glm::mat4 shipInitialTransformation = glm::translate(glm::vec3(0, -2.25f, -5)) * glm::rotate(glm::radians(180.0f), glm::vec3(0, 1, -0.1)) * glm::scale(glm::vec3(0.25f));
 	glm::mat4 shipModelMatrix = glm::translate(cameraPos + cameraDir * 0.5f) * glm::rotate(-cameraAngle, glm::vec3(0, 1, 0)) * shipInitialTransformation;
-	drawObjectTextureEM(&sphereModel, glm::translate(sharkVecMin) * glm::scale(glm::vec3(0.2f)), asteroidTex);
-	drawObjectTextureEM(&sphereModel, glm::translate(sharkVecMax) * glm::scale(glm::vec3(0.2f)), asteroidTex);
+	//drawObjectColor(&sphereModel, glm::translate(sharkVecMin) * glm::scale(glm::vec3(1)), glm::vec3(1, 0, 0));
+	//drawObjectColor(&sphereModel, glm::translate(sharkVecMax) * glm::scale(glm::vec3(1)), glm::vec3(1, 0, 0));
 	//glm::mat4 shipModelMatrix = glm::translate(cameraPos + cameraDir * 0.5f + glm::vec3(0,-0.25f,0)) * glm::rotate(-cameraAngle + glm::radians(90.0f), glm::vec3(0,1,0)) * glm::scale(glm::vec3(0.25f));
 	//drawObjectColor(&shipModel, shipModelMatrix, glm::vec3(0.6f));
 	drawObjectTexture(&sharkModel, shipModelMatrix, sharkTex);
@@ -528,7 +537,7 @@ void renderScene()
 	
 	
 	//ground texture with normal map
-	//drawObjectTextureNormal(&groundModel, glm::translate(glm::vec3(0, -115, 0)), groundTex, groundTexN);
+	drawObjectTextureNormal(&groundModel, glm::translate(glm::vec3(0, -115, 0)), groundTex, groundTexN);
 	
 	
 	//drawObjectTexture(&sphereModel, glm::translate(glm::vec3(0.0f, -130, 0.0f)) * glm::scale(glm::vec3(95.0f)), skyTex);
@@ -553,10 +562,10 @@ void renderScene()
 		plant[i].Render();
 	}
 
-	/*for (int i = 0; i < ILOSCBUBBLE; i++)
+	for (int i = 0; i < ILOSCBUBBLE; i++)
 	{
 		bubble[i].Render();
-	}*/
+	}
 
 	for (int i = 0; i < ILOSCSTATUL; i++)
 	{
@@ -591,10 +600,10 @@ void init()
 		bubble[i] = *temporary;
 	}
 
-	Statue* stat1 = new Statue(glm::vec3(10, -115, -10));
+	Statue* stat1 = new Statue(glm::vec3(10, -115, -10), true);
 	statue[0] = *stat1;
 
-	Statue* stat2 = new Statue(glm::vec3(-20, -115, -20));
+	Statue* stat2 = new Statue(glm::vec3(-20, -115, -20), false);
 	statue[1] = *stat2;
 
 
@@ -603,7 +612,7 @@ void init()
 	programTextureNormal = shaderLoader.CreateProgram("shaders/shader_texN.vert", "shaders/shader_texN.frag");
 	programSkybox = shaderLoader.CreateProgram("shaders/shader_skybox.vert", "shaders/shader_skybox.frag");
 	programEM = shaderLoader.CreateProgram("shaders/shader_texEM.vert", "shaders/shader_texEM.frag");
-	programBRDF = shaderLoader.CreateProgram("shaders/shader_texBRDF.vert", "shaders/shader_texBRDF.frag");
+	programBRDF = shaderLoader.CreateProgram("shaders/shader_tex3.vert", "shaders/shader_tex3.frag");
 
 	groundModel = obj::loadModelFromFile("models/Rockwall.obj");
 	shipModel = obj::loadModelFromFile("models/spaceship.obj");
@@ -672,6 +681,109 @@ void shutdown()
 void idle()
 {
 	glutPostRedisplay();
+}
+
+bool pointAABB(glm::vec3 pos, glm::vec3 b1, glm::vec3 b2) {
+	/*std::cout << "=======" << std::endl;
+	std::cout << glm::to_string(a1) << std::endl;
+	std::cout << glm::to_string(a2) << std::endl;
+	
+	if (a2.x < b1.x || a1.x > b2.x) return false;
+	if (a2.y < b1.y || a1.y > b2.y) return false;
+	if (a2.z < b1.z || a1.z > b2.z) return false;
+
+	return true;*/
+	std::cout << glm::to_string(b1) << std::endl;
+	std::cout << glm::to_string(b2) << std::endl;
+	if (pos.x > b1.x && pos.x < b2.x && pos.y >b1.y && pos.y < b2.y && pos.z < b1.z && pos.z > b2.z) {
+		return true;
+	}
+	return false;
+	/*return(a2.x > b1.x &&
+		a1.x < b2.x &&
+		a2.y > b1.y &&
+		a1.y < b2.y &&
+		a2.z > b1.z &&
+		a1.z < b2.z);*/
+}
+
+bool isCollision() {
+	for (int i = 0; i < ILOSCSTATUL; i++) {
+		if (pointAABB(sharkPos, statue[i].vecMin, statue[i].vecMax)) {
+			std::cout << "kolizja" << std::endl;
+			return true;
+		}
+	}
+	return false;
+}
+
+void keyboard(unsigned char key, int x, int y)
+{
+	float angleSpeed = 0.1f;
+	float angleSpeed1 = 0.5f;
+	float moveSpeed = 0.7f;
+	switch (key)
+	{
+	case 'z':
+		cameraAngle -= angleSpeed;
+		calcSharkPos();
+		if (isCollision()) {
+			cameraAngle += angleSpeed;
+		}
+		break;
+	case 'x':
+		cameraAngle += angleSpeed;
+		calcSharkPos();
+		if (isCollision()) {
+			cameraAngle -= angleSpeed;
+		}
+		break;
+	case 'q':
+		cameraPos -= cameraVer * moveSpeed;
+		calcSharkPos();
+		if (isCollision()) {
+			cameraPos += angleSpeed;
+		}
+		break;
+	case 'e':
+		if (cameraPos.y > -111) {
+			cameraPos += cameraVer * moveSpeed;
+			calcSharkPos();
+			if (isCollision()) {
+				cameraPos -= cameraVer * moveSpeed;
+			}
+		}
+		break;
+	case 'w':
+		cameraPos += cameraDir * moveSpeed;
+		calcSharkPos();
+		if (isCollision()) {
+			cameraPos -= cameraDir * moveSpeed;
+		}
+		break;
+	case 's':
+		cameraPos -= cameraDir * moveSpeed;
+		calcSharkPos();
+		if (isCollision()) {
+			cameraPos += cameraDir * moveSpeed;
+		}
+		break;
+	case 'd':
+		cameraPos += cameraSide * moveSpeed;
+		calcSharkPos();
+		if (isCollision()) {
+			cameraPos -= cameraSide * moveSpeed;
+		}
+		break;
+	case 'a':
+		cameraPos -= cameraSide * moveSpeed;
+		calcSharkPos();
+		if (isCollision()) {
+			cameraPos += cameraSide * moveSpeed;
+		}
+		break;
+	}
+	calcSharkPos();
 }
 
 int main(int argc, char ** argv)
